@@ -14,7 +14,7 @@ public class Controlador implements ActionListener {
     private Producto producto;
     private DefaultTableModel modelo;
     
-    private ArrayList<Producto> productos; //borrar
+    //private ArrayList<Producto> productos; //borrar
     
     
     
@@ -31,7 +31,7 @@ public class Controlador implements ActionListener {
             }
         });
         
-        productos = new ArrayList<>(); //borrar
+        //productos = new ArrayList<>(); //borrar
         
         //Modelo de tabla
         modelo = (DefaultTableModel) vista.jtProductos.getModel();
@@ -58,7 +58,7 @@ public class Controlador implements ActionListener {
             {
                 p.setExistenciasIniciales(Integer.parseInt(vista.jtfExistenciasIniciales.getText().trim()));
                 p.setCostoUnitario(Float.parseFloat(vista.jtfCostoUnitario.getText().trim()));
-                productos.add(p);//borrar
+                //productos.add(p);//borrar
                 actualizarTablaProductos();
                 JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
             }catch(NumberFormatException error)
@@ -71,12 +71,15 @@ public class Controlador implements ActionListener {
     
     public void actualizarTablaProductos()
     {
-        Object []object = new Object[5];
+        Object []object = new Object[8];
         object[0] = vista.jtfCodigoProducto.getText();
         object[1] = vista.jtfDescripcion.getText();
         object[2] = vista.jtfGrado.getText();
         object[3] = vista.jtfExistenciasIniciales.getText(); 
-        object[4] = vista.jtfCostoUnitario.getText();
+        object[4] = "";
+        object[5] = "";
+        object[6] = "$ "+vista.jtfCostoUnitario.getText();
+        object[7] = vista.jtfExistenciasIniciales.getText();
         
         vista.jtfCodigoProducto.setText("");
         vista.jtfDescripcion.setText("");
