@@ -8,6 +8,15 @@ public class Producto {
     String grado;
     int existenciasIniciales;
     int entradas,salidas,stock;
+    float costoUnitario;
+
+    public float getCostoUnitario() {
+        return costoUnitario;
+    }
+
+    public void setCostoUnitario(float costoUnitario) {
+        this.costoUnitario = costoUnitario;
+    }
 
     public String getCodigoProducto() {
         return codigoProducto;
