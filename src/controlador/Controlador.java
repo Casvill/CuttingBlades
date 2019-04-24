@@ -2,7 +2,7 @@ package controlador;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;  //borrar
+//import java.util.ArrayList;  //borrar
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import modelo.Producto;
@@ -50,36 +50,46 @@ public class Controlador implements ActionListener {
     {
         if(e.getSource() == vista.jbAñadir)
         {
-            Producto p = new Producto();
-            p.setCodigoProducto(vista.jtfCodigoProducto.getText().trim());
-            p.setDescripcion(vista.jtfDescripcion.getText().trim());
-            p.setGrado(vista.jtfGrado.getText().trim());
-            try
+            if(vista.jtfCodigoProducto.getText().equals("") || 
+               vista.jtfDescripcion.getText().equals("") ||
+               vista.jtfGrado.getText().equals("") ||
+               vista.jtfExistenciasIniciales.getText().equals("") ||
+               vista.jtfCostoUnitario.getText().equals("")   )
             {
-                p.setExistenciasIniciales(Integer.parseInt(vista.jtfExistenciasIniciales.getText().trim()));
-                p.setCostoUnitario(Float.parseFloat(vista.jtfCostoUnitario.getText().trim()));
-                //productos.add(p);//borrar
-                actualizarTablaProductos();
-                JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
-            }catch(NumberFormatException error)
-            {
-                JOptionPane.showMessageDialog(null, "Error. El campo de existencias iniciales y costo unitario deben ser valores numéricos.");
+                JOptionPane.showMessageDialog(null, "Debe llenar todos los campos.");
             }
-            
+            else
+            {
+                Producto p = new Producto();
+                p.setCodigoProducto(vista.jtfCodigoProducto.getText().trim());
+                p.setDescripcion(vista.jtfDescripcion.getText().trim());
+                p.setGrado(vista.jtfGrado.getText().trim());
+                try
+                {
+                    p.setExistenciasIniciales(Integer.parseInt(vista.jtfExistenciasIniciales.getText().trim()));
+                    p.setCostoUnitario(Float.parseFloat(vista.jtfCostoUnitario.getText().trim()));
+                    //productos.add(p);//borrar
+                    actualizarTablaProductos();
+                    JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
+                }catch(NumberFormatException error)
+                {
+                    JOptionPane.showMessageDialog(null, "Error. El campo de existencias iniciales y costo unitario deben ser valores numéricos.");
+                }
+            } 
         }
     }
     
     public void actualizarTablaProductos()
     {
         Object []object = new Object[8];
-        object[0] = vista.jtfCodigoProducto.getText();
-        object[1] = vista.jtfDescripcion.getText();
-        object[2] = vista.jtfGrado.getText();
-        object[3] = vista.jtfExistenciasIniciales.getText(); 
+        object[0] = vista.jtfCodigoProducto.getText().trim();
+        object[1] = vista.jtfDescripcion.getText().trim();
+        object[2] = vista.jtfGrado.getText().trim();
+        object[3] = vista.jtfExistenciasIniciales.getText().trim(); 
         object[4] = "";
         object[5] = "";
-        object[6] = "$ "+vista.jtfCostoUnitario.getText();
-        object[7] = vista.jtfExistenciasIniciales.getText();
+        object[6] = "$ "+vista.jtfCostoUnitario.getText().trim();
+        object[7] = vista.jtfExistenciasIniciales.getText().trim();
         
         vista.jtfCodigoProducto.setText("");
         vista.jtfDescripcion.setText("");
