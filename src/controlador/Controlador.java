@@ -5,6 +5,7 @@ import java.awt.event.ActionListener;
 //import java.util.ArrayList;  //borrar
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import modelo.DropXlsx;
 import modelo.Producto;
 import vista.Vista;
 
@@ -33,9 +34,15 @@ public class Controlador implements ActionListener {
         
         //productos = new ArrayList<>(); //borrar
         
-        //Modelo de tabla
+        //Modelo de tabla--------
         modelo = (DefaultTableModel) vista.jtProductos.getModel();
        //Fin modelo de tabla------
+       
+       
+       //Importar tabla de excel:-----------
+       DropXlsx drop = new DropXlsx();
+       drop.setJtable(vista.jtImportar);
+       //Fin importar tabla de excel--------
     }
     
     //Manejador de eventos al presionar un botón en el campo de texto para la búsqueda por código de producto:
