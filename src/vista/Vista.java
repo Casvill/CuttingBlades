@@ -1,3 +1,5 @@
+// Para buscar rápido esta clase contiene:
+
 package vista;
 
 public class Vista extends javax.swing.JFrame {

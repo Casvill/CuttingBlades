@@ -1,10 +1,13 @@
+// Para buscar rápido esta clase contiene:
+//cambiar
+
 package controlador;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-//import java.util.ArrayList;  //borrar
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
+import modelo.Conexion;
 import modelo.DropXlsx;
 import modelo.Producto;
 import vista.Vista;
@@ -14,16 +17,17 @@ public class Controlador implements ActionListener {
     private Vista vista;
     private Producto producto;
     private DefaultTableModel modelo;
+    private Conexion conexion;
     
-    //private ArrayList<Producto> productos; //borrar
+ 
     
-    
-    
-    //Constructor
+    //Constructor:-------------------------------------------------------------------------------
     public Controlador(Vista vista) 
     {   
         this.vista = vista;
         this.vista.setVisible(true);
+        conexion = new Conexion();
+        
         
         this.vista.jbAñadir.addActionListener(this);
         this.vista.jtfBusquedaPorCodigo.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -32,7 +36,6 @@ public class Controlador implements ActionListener {
             }
         });
         
-        //productos = new ArrayList<>(); //borrar
         
         //Modelo de tabla--------
         modelo = (DefaultTableModel) vista.jtProductos.getModel();
@@ -44,14 +47,19 @@ public class Controlador implements ActionListener {
        drop.setJtable(vista.jtImportar);
        //Fin importar tabla de excel--------
     }
+    //Fin Constructor----------------------------------------------------------------------------------------
+    
+    /******************************************************************************************************/
     
     //Manejador de eventos al presionar un botón en el campo de texto para la búsqueda por código de producto:
     private void jtBusquedaPorCodigoKeyPressed(java.awt.event.KeyEvent evt) {                                               
         
     }     
+    //Fin jtBusquedaPorCodigoKeyPressed()---------------------------------------------------------------------
     
+    /******************************************************************************************************/
     
-    //Manejador de eventos al presionar un botón:
+    //Manejador de eventos al presionar un botón:-------------------------------------------------------------
     @Override
     public void actionPerformed(ActionEvent e) 
     {
@@ -66,49 +74,93 @@ public class Controlador implements ActionListener {
                 JOptionPane.showMessageDialog(null, "Debe llenar todos los campos.");
             }
             else
-            {
-                Producto p = new Producto();
-                p.setCodigoProducto(vista.jtfCodigoProducto.getText().trim());
-                p.setDescripcion(vista.jtfDescripcion.getText().trim());
-                p.setGrado(vista.jtfGrado.getText().trim());
+            { 
+                String codProducto=vista.jtfCodigoProducto.getText().trim();
+                String descripcion=vista.jtfDescripcion.getText().trim();
+                String grado = vista.jtfGrado.getText().trim();
+                String exisIni = vista.jtfExistenciasIniciales.getText().trim();
+                String costoUnitario = vista.jtfCostoUnitario.getText().trim();
+                String stock = vista.jtfExistenciasIniciales.getText().trim();//cambiar  (depronto, no sé, a ver que pasa con el tiempo :v)
+                
                 try
                 {
-                    p.setExistenciasIniciales(Integer.parseInt(vista.jtfExistenciasIniciales.getText().trim()));
-                    p.setCostoUnitario(Float.parseFloat(vista.jtfCostoUnitario.getText().trim()));
-                    //productos.add(p);//borrar
-                    actualizarTablaProductos();
-                    JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
+                    Integer.parseInt(exisIni);
+                    Float.parseFloat(costoUnitario);
+                    
+                    if(añadirProducto(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock) == true)
+                    {
+                        limpiarFormularioPestaña2();
+                        actualizarTablaProductos(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock);
+                        JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
+                    }
                 }catch(NumberFormatException error)
                 {
                     JOptionPane.showMessageDialog(null, "Error. El campo de existencias iniciales y costo unitario deben ser valores numéricos.");
-                }
+                } 
             } 
         }
     }
+    //Fin actionPerformed()-----------------------------------------------------------------------------------
     
-    public void actualizarTablaProductos()
+    /******************************************************************************************************/
+    
+    //Método para añadir un producto a la base de datos:------------------------------------------------------
+    //retorna true si lo añade / false si ocurre algún error
+    public boolean añadirProducto(String codProducto,String descripcion,String grado,String exisIni,
+                               String entradas,String salidas,String costoUnitario,String stock)
+    {
+            String query="insert into productos values ('"+codProducto+"','"+descripcion+"','"
+                         +grado+"','"+exisIni+"','"+entradas+"','"+salidas+"','"+costoUnitario+"','"+stock+"')";
+
+            conexion.abrirConexion();
+            
+            if(conexion.ejecutarQuery(query) != true)
+              return false;
+            
+            conexion.cerrarConexion();
+            
+            return true;
+    }
+    //Fin añadirProducto()------------------------------------------------------------------------------------
+    
+    /******************************************************************************************************/
+    
+    //Método para actualizar la tabla de productos al agregar un producto:------------------------------------
+    public void actualizarTablaProductos(String codProducto, String descripcion, String grado, String exisIni, 
+                                         String entradas, String salidas, String costoUnitario, String stock)
     {
         Object []object = new Object[8];
-        object[0] = vista.jtfCodigoProducto.getText().trim();
-        object[1] = vista.jtfDescripcion.getText().trim();
-        object[2] = vista.jtfGrado.getText().trim();
-        object[3] = vista.jtfExistenciasIniciales.getText().trim(); 
-        object[4] = "";
-        object[5] = "";
-        object[6] = "$ "+vista.jtfCostoUnitario.getText().trim();
-        object[7] = vista.jtfExistenciasIniciales.getText().trim();
-        
+        object[0] = codProducto;
+        object[1] = descripcion;
+        object[2] = grado;
+        object[3] = exisIni; 
+        object[4] = entradas;
+        object[5] = salidas;
+        object[6] = "$ "+costoUnitario;
+        object[7] = stock;
+                
+        modelo.addRow(object);   
+    }
+    //Fin actualizarTablaProductos()----------------------------------------------------------------------------
+    
+    /******************************************************************************************************/
+    
+    //Método para limpiar los campos de texto de la interfaz para añadir productos:-----------------------------
+    public void limpiarFormularioPestaña2()
+    {
         vista.jtfCodigoProducto.setText("");
         vista.jtfDescripcion.setText("");
         vista.jtfGrado.setText("");        
         vista.jtfExistenciasIniciales.setText("");        
         vista.jtfCostoUnitario.setText("");
-                
-        modelo.addRow(object);   
     }
+    //Fin limpiarFormularioPestaña2()---------------------------------------------------------------------------
     
+    /******************************************************************************************************/
     
+    //Método principal------------------------------------------------------------------------------------------
     public static void main(String args[]) {
         Controlador control = new Controlador(new Vista());
     }
+    //Fin método principal--------------------------------------------------------------------------------------
 }

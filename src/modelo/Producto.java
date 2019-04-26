@@ -1,3 +1,5 @@
+// Para buscar rápido esta clase contiene:
+
 package modelo;
 
 
