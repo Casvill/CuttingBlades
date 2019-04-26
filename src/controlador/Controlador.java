@@ -1,6 +1,9 @@
 // Para buscar rápido esta clase contiene:
 //cambiar
 //seguir
+//..................................................................................
+//para tener en cuenta a la hora de hacer la lógica de entradas/salidas (movimientos):
+//update productos set stock = ((existenciasini + entradas)-salidas)
 
 package controlador;
 
@@ -88,6 +91,7 @@ public class Controlador implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) 
     {
+        //Botón añadir (pestaña2): Añade el producto en caso de que cumpla los requisitos
         if(e.getSource() == vista.jbAñadir)
         {
             if(vista.jtfCodigoProducto.getText().equals("") || 
@@ -123,7 +127,7 @@ public class Controlador implements ActionListener {
                     JOptionPane.showMessageDialog(null, "Error. El campo de existencias iniciales y costo unitario deben ser valores numéricos.");
                 } 
             } 
-        }
+        }//Fin botón añadir (pestaña2)
     }
     //Fin actionPerformed()-----------------------------------------------------------------------------------
     
