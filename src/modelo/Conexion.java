@@ -82,27 +82,20 @@ public class Conexion {
     /******************************************************************************************************/
     
     //Método para enviar una query que retorna algo:-----------------------------------------------------
-    //ESTE MÉTODO AÚN SIGUE EN CONSTRUCCIÓN!!
-    public String ejecutarQueryResult(String query)
+    public ResultSet ejecutarQueryResult(String query)
     { 
-        String retorna="";
         int i=0;
         try 
         {
             st= conexion.createStatement();
             result = st.executeQuery(query);
-            
-            while(result.next())
-            {
-                i++;
-                retorna += result.getString(i)+"\n";
-            }
+      
         }catch (SQLException | NullPointerException error) 
         {
             JOptionPane.showMessageDialog(null, "Error al tratar de ejecutar la query:\n"+error.getMessage());
         }
         
-        return retorna;
+        return result;
     }
     //Fin ejecutarQueryResult()---------------------------------------------------------------------------
     

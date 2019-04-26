@@ -1,10 +1,13 @@
 // Para buscar rápido esta clase contiene:
 //cambiar
+//seguir
 
 package controlador;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import modelo.Conexion;
@@ -15,7 +18,6 @@ import vista.Vista;
 public class Controlador implements ActionListener {
     
     private Vista vista;
-    private Producto producto;
     private DefaultTableModel modelo;
     private Conexion conexion;
     
@@ -41,6 +43,7 @@ public class Controlador implements ActionListener {
         modelo = (DefaultTableModel) vista.jtProductos.getModel();
        //Fin modelo de tabla------
        
+       extraerDeDB();
        
        //Importar tabla de excel:-----------
        DropXlsx drop = new DropXlsx();
@@ -48,6 +51,28 @@ public class Controlador implements ActionListener {
        //Fin importar tabla de excel--------
     }
     //Fin Constructor----------------------------------------------------------------------------------------
+    
+    /******************************************************************************************************/
+    
+    //Método que extrae toda la info de la tabla productos de la base de datos y la muestra en el jTable de productos:
+    public void extraerDeDB()
+    {
+        conexion.abrirConexion();
+        ResultSet rs = conexion.ejecutarQueryResult("select * from productos");
+        try
+        {
+            while(rs.next())
+            {
+                actualizarTablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
+                                        , rs.getString("entradas"), rs.getString("salidas"), rs.getString("costounitario"), rs.getString("stock"));
+            }
+        }catch(SQLException | NullPointerException error)
+        {
+            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos:\n"+error.getMessage());
+        }
+        conexion.cerrarConexion();
+    }
+    //Fin extraerDeDB()--------------------------------------------------------------------------------------
     
     /******************************************************************************************************/
     
