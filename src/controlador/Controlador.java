@@ -15,7 +15,6 @@ import javax.swing.JOptionPane;
 import javax.swing.table.DefaultTableModel;
 import modelo.Conexion;
 import modelo.DropXlsx;
-import modelo.Producto;
 import vista.Vista;
 
 public class Controlador implements ActionListener {
@@ -36,8 +35,8 @@ public class Controlador implements ActionListener {
         
         this.vista.jbAñadir.addActionListener(this);
         this.vista.jtfBusquedaPorCodigo.addKeyListener(new java.awt.event.KeyAdapter() {
-            public void keyPressed(java.awt.event.KeyEvent evt) {
-                jtBusquedaPorCodigoKeyPressed(evt);
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                jtBusquedaPorCodigoKeyReleased(evt);
             }
         });
         
@@ -80,10 +79,28 @@ public class Controlador implements ActionListener {
     /******************************************************************************************************/
     
     //Manejador de eventos al presionar un botón en el campo de texto para la búsqueda por código de producto:
-    private void jtBusquedaPorCodigoKeyPressed(java.awt.event.KeyEvent evt) {                                               
+    //Lo que hace esto es que al soltar la tecla presionada, se busca el o los productos cuyo código empiece por
+    //el texto escrito en el campo de búsqueda.
+    private void jtBusquedaPorCodigoKeyReleased(java.awt.event.KeyEvent evt) {        
         
+            String busqueda="";
+            busqueda=vista.jtfBusquedaPorCodigo.getText().trim();
+            conexion.abrirConexion();
+            ResultSet rs = conexion.ejecutarQueryResult("select * from productos where codigoproducto like '"+busqueda+"%'");
+        try {
+            borrarTablaProductos();
+            while(rs.next())
+            {
+                actualizarTablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
+                        , rs.getString("entradas"), rs.getString("salidas"), rs.getString("costounitario"), rs.getString("stock"));
+            }
+            conexion.cerrarConexion();
+        } catch (SQLException error) 
+        {
+            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
+        }
     }     
-    //Fin jtBusquedaPorCodigoKeyPressed()---------------------------------------------------------------------
+    //Fin jtBusquedaPorCodigoKeyTyped()---------------------------------------------------------------------
     
     /******************************************************************************************************/
     
@@ -144,13 +161,29 @@ public class Controlador implements ActionListener {
             conexion.abrirConexion();
             
             if(conexion.ejecutarQuery(query) != true)
-              return false;
+            {
+                conexion.cerrarConexion();
+                return false;
+            }
+              
             
             conexion.cerrarConexion();
             
             return true;
     }
     //Fin añadirProducto()------------------------------------------------------------------------------------
+    
+    /******************************************************************************************************/
+    
+    //Este método borrar todas las filas de la tabla de productos de la pestaña general-----------------------
+    public void borrarTablaProductos()
+    {
+        for (int i = modelo.getRowCount() -1; i >= 0; i--)
+        {
+            modelo.removeRow(i);
+        }
+    }
+    //Fin borrarTablaProductos()------------------------------------------------------------------------------
     
     /******************************************************************************************************/
     
