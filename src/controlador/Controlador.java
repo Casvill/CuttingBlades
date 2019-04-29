@@ -1,9 +1,10 @@
 // Para buscar rápido esta clase contiene:
-//cambiar
-//seguir
+//Consultar
 //..................................................................................
 //para tener en cuenta a la hora de hacer la lógica de entradas/salidas (movimientos):
 //update productos set stock = ((existenciasini + entradas)-salidas)
+//Cada que haya una entrada, el costo unitario del producto cambia así:
+//costoUnitario = ( (costoUnitario * stock) + (costoUnitarioEntrante * cantEntrante) ) / (stock + cantEntrante)
 
 package controlador;
 
@@ -28,24 +29,37 @@ public class Controlador implements ActionListener {
     //Constructor:-------------------------------------------------------------------------------
     public Controlador(Vista vista) 
     {   
-        this.vista = vista;
+        this.vista = vista;  
         this.vista.setVisible(true);
         conexion = new Conexion();
         
-        
+        //ActionListeners:-------------------------------------------
         this.vista.jbAñadir.addActionListener(this);
+        this.vista.jbLimpiarEntrada.addActionListener(this);
+        this.vista.jbAceptarEntrada.addActionListener(this);
+        //Fin ActionListener.----------------------------------------
+        
+        
+        //Consultar:------------------------------------------------------------
+        //Esto se es lo que se debe añadir para añadir una escucha a un campo de texto
+        //al soltar una tecla. En este caso se le añadió al campo de búsqueda de productos por código.
+        //En este video explican un poco los eventos del teclado: https://www.youtube.com/watch?v=_BWYtHNmKCc
         this.vista.jtfBusquedaPorCodigo.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
                 jtBusquedaPorCodigoKeyReleased(evt);
             }
         });
+        //Fin Consultar.--------------------------------------------------------
         
         
         //Modelo de tabla--------
         modelo = (DefaultTableModel) vista.jtProductos.getModel();
        //Fin modelo de tabla------
        
+       
+       //Se llena la tabla de productos principal con los datos de la DB:
        extraerDeDB();
+       
        
        //Importar tabla de excel:-----------
        DropXlsx drop = new DropXlsx();
@@ -110,15 +124,18 @@ public class Controlador implements ActionListener {
     {
         //Botón añadir (pestaña2): Añade el producto en caso de que cumpla los requisitos
         if(e.getSource() == vista.jbAñadir)
-        {
+        {   
+            //Se verifica que ningún campo esté vacío:
             if(vista.jtfCodigoProducto.getText().equals("") || 
                vista.jtfDescripcion.getText().equals("") ||
                vista.jtfGrado.getText().equals("") ||
                vista.jtfExistenciasIniciales.getText().equals("") ||
                vista.jtfCostoUnitario.getText().equals("")   )
             {
-                JOptionPane.showMessageDialog(null, "Debe llenar todos los campos.");
+                JOptionPane.showMessageDialog(null, "No puede haber ningún campo vacío.", "Error", JOptionPane.WARNING_MESSAGE);
             }
+            
+            //Si ningún campo está vacío, se guardan los valores introducidos:
             else
             { 
                 String codProducto=vista.jtfCodigoProducto.getText().trim();
@@ -126,13 +143,17 @@ public class Controlador implements ActionListener {
                 String grado = vista.jtfGrado.getText().trim();
                 String exisIni = vista.jtfExistenciasIniciales.getText().trim();
                 String costoUnitario = vista.jtfCostoUnitario.getText().trim();
-                String stock = vista.jtfExistenciasIniciales.getText().trim();//cambiar  (depronto, no sé, a ver que pasa con el tiempo :v)
+                String stock = vista.jtfExistenciasIniciales.getText().trim();
                 
+                //Se valida que los campos existenciInicial y costoUnitario sean valores numéricos:
                 try
                 {
+                    //Se hace el parseo de los campos existenciaInicial y costoUnitario:
                     Integer.parseInt(exisIni);
                     Float.parseFloat(costoUnitario);
                     
+                    //En caso de que no haya ningún error, se añade el nuevo producto a la DB y al jTable de productos,
+                    //se limpian los campos del formulario respectivo.
                     if(añadirProducto(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock) == true)
                     {
                         limpiarFormularioPestaña2();
@@ -145,6 +166,64 @@ public class Controlador implements ActionListener {
                 } 
             } 
         }//Fin botón añadir (pestaña2)
+        
+        
+        //Botón limpiarEntrada:-------------------
+        if(e.getSource() == vista.jbLimpiarEntrada)
+        {
+            limpiarFormularioEntrada();
+        }//Fin botón limpiarEntrada
+        
+        
+        //Botón aceptarEntrada:-------------------
+        if(e.getSource() == vista.jbAceptarEntrada)
+        {
+            if(vista.jtfP3CantidadEntrante.getText().equals("") ||
+               vista.jtfP3CodProducto.getText().equals("") ||
+               vista.jtfP3CostoTotalPesos.getText().equals("") ||
+               vista.jtfP3NomProveedor.getText().equals("") ||
+               vista.jtfP3NumFactura.getText().equals(""))
+            {
+                JOptionPane.showMessageDialog(null, "Los campos marcados con un asterisco (*) no pueden estar vacíos.", "Error", JOptionPane.WARNING_MESSAGE);
+            }
+            
+            else
+            {
+                String codProducto = vista.jtfP3CodProducto.getText();
+                String numFactura = vista.jtfP3NumFactura.getText();
+                String nombreProveedor = vista.jtfP3NomProveedor.getText();
+                String costoDolares = vista.jtfP3CostoDolares.getText();
+                String tasaDeCambio = vista.jtfP3TasaCambio.getText();
+                String costoTotalPesos = vista.jtfP3CostoTotalPesos.getText();
+                String cantEntrante = vista.jtfP3CantidadEntrante.getText();
+                
+                try
+                {
+                    if(!costoDolares.equals(""))
+                        Float.parseFloat(costoDolares);
+                    else costoDolares=null;
+                    
+                    if(!tasaDeCambio.equals(""))
+                        Float.parseFloat(tasaDeCambio);
+                    else tasaDeCambio=null;
+                    
+                    Integer.parseInt(numFactura);
+                    Integer.parseInt(cantEntrante);
+                    Float.parseFloat(costoTotalPesos);
+                    
+                    if(añadirEntrada(codProducto,numFactura,nombreProveedor,costoDolares,tasaDeCambio,costoTotalPesos,cantEntrante) == true)
+                    {
+                        limpiarFormularioEntrada();
+
+                        JOptionPane.showMessageDialog(null, "Entrada añadida exitosamente.");
+                    }
+                }catch(NumberFormatException error)
+                {
+                    JOptionPane.showMessageDialog(null, "Error. Los campos Numero de factura, Cantidad Entrante y Costo total en pesos deben ser valores numéricos.");
+                } 
+            }
+                
+        }//Fin botón aceptarEntrada
     }
     //Fin actionPerformed()-----------------------------------------------------------------------------------
     
@@ -153,31 +232,83 @@ public class Controlador implements ActionListener {
     //Método para añadir un producto a la base de datos:------------------------------------------------------
     //retorna true si lo añade / false si ocurre algún error
     public boolean añadirProducto(String codProducto,String descripcion,String grado,String exisIni,
-                               String entradas,String salidas,String costoUnitario,String stock)
+                                  String entradas,String salidas,String costoUnitario,String stock)
     {
-            String query="insert into productos values ('"+codProducto+"','"+descripcion+"','"
-                         +grado+"','"+exisIni+"','"+entradas+"','"+salidas+"','"+costoUnitario+"','"+stock+"')";
+        String query="insert into productos values ('"+codProducto+"','"+descripcion+"','"
+                     +grado+"','"+exisIni+"','"+entradas+"','"+salidas+"','"+costoUnitario+"','"+stock+"')";
 
-            conexion.abrirConexion();
-            
-            if(conexion.ejecutarQuery(query) != true)
-            {
-                conexion.cerrarConexion();
-                return false;
-            }
-              
-            
+        //Envío de Query:-----------------------
+        conexion.abrirConexion();
+
+        if(conexion.ejecutarQuery(query) != true)
+        {
             conexion.cerrarConexion();
+            return false;
+        }
+
+        conexion.cerrarConexion();
+        //Fin del envío de la Query.------------
             
-            return true;
+        return true;
     }
     //Fin añadirProducto()------------------------------------------------------------------------------------
+    
+    /******************************************************************************************************/
+    
+    //Método para añadir una entrada a la base de datos:------------------------------------------------------
+    //retorna true si lo añade / false si ocurre algún error.
+    //En este método pueden haber valores nulos por lo cual la query se hace diferente 
+    //dependiendo de si hay valores null o no, y en caso de haberlos entonces dependiendo de cuáles son nulos y cuáles no.
+    public boolean añadirEntrada(String codProducto,String numFactura,String nombreProveedor,String costoDolares,
+                               String tasaDeCambio,String costoTotalPesos,String cantEntrante)
+    {
+        String query;
+        
+        //Query en caso de que ambos valores sean nulos:
+        if(costoDolares==null && tasaDeCambio==null)
+            query="insert into entradas values ('"+codProducto+"','"+numFactura+"','"
+                     +nombreProveedor+"',"+null+","+null+",'"+costoTotalPesos+"','"+cantEntrante+"')";
+        
+        //Query en caso de que sólo costoDolares sea nulo:
+        else if(costoDolares==null)
+            query="insert into entradas values ('"+codProducto+"','"+numFactura+"','"
+                     +nombreProveedor+"',"+null+",'"+tasaDeCambio+"','"+costoTotalPesos+"','"+cantEntrante+"')";
+        
+        //Query en caso de que tasaDeCambio sea nulo:
+        else if(tasaDeCambio==null)
+            query="insert into entradas values ('"+codProducto+"','"+numFactura+"','"
+                     +nombreProveedor+"','"+costoDolares+"',"+null+",'"+costoTotalPesos+"','"+cantEntrante+"')";
+        
+        //Query en caso de que ningún valor sea nulo:
+        else
+        query="insert into entradas values ('"+codProducto+"','"+numFactura+"','"
+                     +nombreProveedor+"','"+costoDolares+"','"+tasaDeCambio+"','"+costoTotalPesos+"','"+cantEntrante+"')";
+
+        //Envío de Query:-----------------------
+        conexion.abrirConexion();
+
+        if(conexion.ejecutarQuery(query) != true)
+        {
+            conexion.cerrarConexion();
+            return false;
+        }
+
+        conexion.cerrarConexion();
+        //Fin del envío de la Query.------------
+        
+        return true;
+    }
+    //Fin añadirEntrada()------------------------------------------------------------------------------------
     
     /******************************************************************************************************/
     
     //Este método borrar todas las filas de la tabla de productos de la pestaña general-----------------------
     public void borrarTablaProductos()
     {
+        //En este caso se toma el número de filas que hay en la tabla y se va quitando 
+        //desde el último hácia el primero porque cada que se quita una fila, el número de filas
+        //disminuye, por lo tanto pretender remover las filas desde la primer hácia la última
+        //no sería posible.
         for (int i = modelo.getRowCount() -1; i >= 0; i--)
         {
             modelo.removeRow(i);
@@ -217,6 +348,21 @@ public class Controlador implements ActionListener {
         vista.jtfCostoUnitario.setText("");
     }
     //Fin limpiarFormularioPestaña2()---------------------------------------------------------------------------
+    
+    /******************************************************************************************************/
+    
+    //Método para limpiar los campos de texto de la interfaz para añadir entradas:-----------------------------
+    public void limpiarFormularioEntrada()
+    {
+        vista.jtfP3CantidadEntrante.setText("");
+        vista.jtfP3CodProducto.setText("");
+        vista.jtfP3CostoDolares.setText("");
+        vista.jtfP3CostoTotalPesos.setText("");
+        vista.jtfP3NomProveedor.setText("");
+        vista.jtfP3NumFactura.setText("");
+        vista.jtfP3TasaCambio.setText("");
+    }
+    //Fin limpiarFormularioEntrada()---------------------------------------------------------------------------
     
     /******************************************************************************************************/
     
