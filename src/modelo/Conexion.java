@@ -19,7 +19,8 @@ public class Conexion {
     private java.sql.Statement st;
     private ResultSet result;
     
-    //--------------------------------------------------------------------------//borrar
+    //--------------------------------------------------------------------------
+    //borrar
     //Este constructor es temporal, sólo lo usaré mientras tanto para no tener que estar escribiendo 
     //la url, el usuario y la contraseña en otra parte, así sólo llamo este para pruebas y listo.
     public Conexion()
@@ -38,7 +39,8 @@ public class Conexion {
             JOptionPane.showMessageDialog(null, "Error al tratar de conectar con la base de datos:\n"+error.getMessage());
         }
     }
-    //Fin constructor sin parámetros------------------------------------------------------------//fin borrar
+    //Fin constructor sin parámetros
+    //fin borrar----------------------------------------------------------------------------------------------
     
     /******************************************************************************************************/
     

@@ -1,10 +1,39 @@
-// Para buscar rápido esta clase contiene:
+//PARA BUSCAR RÁPIDO, ESTA CLASE ESTÁ DIVIDIDA EN AGRUPACIONES QUE SE PUEDEN BUSCAR ASÍ:
+
+//EXTRACCIÓN DB: Métodos que extraen la info completa de la db y la pone en sus respectivas tablas.
+
+//BORRAR TABLAS: Métodos para eliminar todas las filas de tablas específicas (en la GUI).
+//               En estos casos para el for se toma el número de filas que hay en la tabla y se va quitando 
+//               desde el último hácia el primero porque cada que se quita una fila, el número de filas
+//               disminuye, por lo tanto pretender remover las filas desde la primer hácia la última
+//               no sería posible.
+
+//BUSQUEDAS: Manejadores de eventos de jTextField's que hacen que al soltar una tecla en un campo de texto se buscan 
+//           coincidencias con registros de la db y los muestra en sus respectivas tablas.
+
+//AÑADIR REGISTROS: Métodos para añadir registros a la DB. Retornan true si lo añade / false si ocurre algún error.
+
+//LIMPIADORES: Métodos para limpiar campos de textos de formularios.
+//----------------------------------------------------------------------------------------------------------
+
+//ESTAS SON NOTAS QUE HE PUESTO Y DEBERÍA MIRAR:
 //Consultar
-//..................................................................................
-//para tener en cuenta a la hora de hacer la lógica de entradas/salidas (movimientos):
+//temporal
+//cambiar
+//----------------------------------------------------------------------------------------------------------
+//OTROS:
+//*Para tener en cuenta a la hora de hacer la lógica de entradas/salidas (movimientos):
 //update productos set stock = ((existenciasini + entradas)-salidas)
 //Cada que haya una entrada, el costo unitario del producto cambia así:
 //costoUnitario = ( (costoUnitario * stock) + (costoUnitarioEntrante * cantEntrante) ) / (stock + cantEntrante)
+
+//*Hacer algo para que al ingresar un registro con una llave primaria repetida, no se muestre el mensaje de adv
+//que se está mostrando sino otro.
+
+//*Editar la pestaña registros, puede ser añadir dos botones para que la tabla cambie a la estructura entradas/salidas
+//dependiendo de lo que se quiera consultar.
+
+//CÓDIGO:-----------------------------------------------------------------------------------------------------
 
 package controlador;
 
@@ -21,7 +50,7 @@ import vista.Vista;
 public class Controlador implements ActionListener {
     
     private Vista vista;
-    private DefaultTableModel modelo;
+    private DefaultTableModel modeloProductos,modeloEntradas;
     private Conexion conexion;
     
  
@@ -34,7 +63,7 @@ public class Controlador implements ActionListener {
         conexion = new Conexion();
         
         //ActionListeners:-------------------------------------------
-        this.vista.jbAñadir.addActionListener(this);
+        this.vista.jbAñadirProducto.addActionListener(this);
         this.vista.jbLimpiarEntrada.addActionListener(this);
         this.vista.jbAceptarEntrada.addActionListener(this);
         //Fin ActionListener.----------------------------------------
@@ -44,21 +73,28 @@ public class Controlador implements ActionListener {
         //Esto se es lo que se debe añadir para añadir una escucha a un campo de texto
         //al soltar una tecla. En este caso se le añadió al campo de búsqueda de productos por código.
         //En este video explican un poco los eventos del teclado: https://www.youtube.com/watch?v=_BWYtHNmKCc
-        this.vista.jtfBusquedaPorCodigo.addKeyListener(new java.awt.event.KeyAdapter() {
+        this.vista.jtfBusquedaPorCodigoProducto.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
-                jtBusquedaPorCodigoKeyReleased(evt);
+                jtBusquedaPorCodigoProductoKeyReleased(evt);
+            }
+        });
+        this.vista.jtfBusquedaPorNumFactura.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                jtBusquedaPorNumFacturaEntradasKeyReleased(evt);
             }
         });
         //Fin Consultar.--------------------------------------------------------
         
         
-        //Modelo de tabla--------
-        modelo = (DefaultTableModel) vista.jtProductos.getModel();
+        //Modelos de tablas:--------
+        modeloProductos = (DefaultTableModel) vista.jtProductos.getModel();
+        modeloEntradas = (DefaultTableModel) vista.jtRegistros.getModel();
        //Fin modelo de tabla------
        
        
        //Se llena la tabla de productos principal con los datos de la DB:
-       extraerDeDB();
+       extraerProductos();
+       extraerEntradas(); //temporal  cambiar a otro lugar
        
        
        //Importar tabla de excel:-----------
@@ -68,10 +104,11 @@ public class Controlador implements ActionListener {
     }
     //Fin Constructor----------------------------------------------------------------------------------------
     
-    /******************************************************************************************************/
     
-    //Método que extrae toda la info de la tabla productos de la base de datos y la muestra en el jTable de productos:
-    public void extraerDeDB()
+    
+    //EXTRACCIÓN DB:****************************************************************************************/
+    
+    public void extraerProductos()
     {
         conexion.abrirConexion();
         ResultSet rs = conexion.ejecutarQueryResult("select * from productos");
@@ -79,7 +116,7 @@ public class Controlador implements ActionListener {
         {
             while(rs.next())
             {
-                actualizarTablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
+                añadirATablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
                                         , rs.getString("entradas"), rs.getString("salidas"), rs.getString("costounitario"), rs.getString("stock"));
             }
         }catch(SQLException | NullPointerException error)
@@ -88,42 +125,99 @@ public class Controlador implements ActionListener {
         }
         conexion.cerrarConexion();
     }
-    //Fin extraerDeDB()--------------------------------------------------------------------------------------
+    //Fin extraerProductos()------------------------------------------------------------------------------------------------
     
-    /******************************************************************************************************/
+    //-----------------------------------------------------------------------------------------------------------------------
     
-    //Manejador de eventos al presionar un botón en el campo de texto para la búsqueda por código de producto:
-    //Lo que hace esto es que al soltar la tecla presionada, se busca el o los productos cuyo código empiece por
-    //el texto escrito en el campo de búsqueda.
-    private void jtBusquedaPorCodigoKeyReleased(java.awt.event.KeyEvent evt) {        
+    public void extraerEntradas()
+    {
+        conexion.abrirConexion();
+        ResultSet rs = conexion.ejecutarQueryResult("select * from entradas");
+        try
+        {
+            while(rs.next())
+            {
+                añadirATablaEntradas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("nombreproveedor"), rs.getString("costodolares")
+                                        , rs.getString("tasadecambio"), rs.getString("costototalpesos"), rs.getString("cantentrante"));
+            }
+        }catch(SQLException | NullPointerException error)
+        {
+            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos:\n"+error.getMessage());
+        }
+        conexion.cerrarConexion();
+    }
+    //Fin extraerEntradas()--------------------------------------------------------------------------------------
+    
+    //FIN EXTRACCIÓN DB******************************************************************************************
+    
+    
+    
+    //BUSQUEDAS:***************************************************************************************************/
+    
+    private void jtBusquedaPorCodigoProductoKeyReleased(java.awt.event.KeyEvent evt) {        
         
             String busqueda="";
-            busqueda=vista.jtfBusquedaPorCodigo.getText().trim();
+            busqueda=vista.jtfBusquedaPorCodigoProducto.getText().trim();
+            
             conexion.abrirConexion();
             ResultSet rs = conexion.ejecutarQueryResult("select * from productos where codigoproducto like '"+busqueda+"%'");
-        try {
+        try 
+        {
             borrarTablaProductos();
             while(rs.next())
             {
-                actualizarTablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
+                añadirATablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
                         , rs.getString("entradas"), rs.getString("salidas"), rs.getString("costounitario"), rs.getString("stock"));
             }
             conexion.cerrarConexion();
+            
         } catch (SQLException error) 
         {
             JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
+            conexion.cerrarConexion();
         }
     }     
     //Fin jtBusquedaPorCodigoKeyTyped()---------------------------------------------------------------------
     
     /******************************************************************************************************/
     
-    //Manejador de eventos al presionar un botón:-------------------------------------------------------------
+    private void jtBusquedaPorNumFacturaEntradasKeyReleased(java.awt.event.KeyEvent evt) {        
+        
+            String busqueda="";
+            busqueda=vista.jtfBusquedaPorNumFactura.getText().trim();
+            
+            conexion.abrirConexion();
+            ResultSet rs = conexion.ejecutarQueryResult("select * from entradas where numfactura like '"+busqueda+"%'");
+        try 
+        {
+            borrarTablaEntradas();
+            while(rs.next())
+            {
+                añadirATablaEntradas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("nombreproveedor"), rs.getString("costodolares")
+                                        , rs.getString("tasadecambio"), rs.getString("costototalpesos"), rs.getString("cantentrante"));
+            }
+            conexion.cerrarConexion();
+            
+        } catch (SQLException error) 
+        {
+            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
+            conexion.cerrarConexion();
+        }
+    }     
+    //Fin jtBusquedaPorNumFacturaKeyTyped()---------------------------------------------------------------------
+    
+    //FIN BUSQUEDAS*********************************************************************************************
+    
+    
+    
+    
+    
+    //BOTONES:**************************************************************************************************
     @Override
     public void actionPerformed(ActionEvent e) 
     {
-        //Botón añadir (pestaña2): Añade el producto en caso de que cumpla los requisitos
-        if(e.getSource() == vista.jbAñadir)
+        //Añade el producto en caso de que cumpla los requisitos
+        if(e.getSource() == vista.jbAñadirProducto)
         {   
             //Se verifica que ningún campo esté vacío:
             if(vista.jtfCodigoProducto.getText().equals("") || 
@@ -157,7 +251,7 @@ public class Controlador implements ActionListener {
                     if(añadirProducto(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock) == true)
                     {
                         limpiarFormularioPestaña2();
-                        actualizarTablaProductos(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock);
+                        añadirATablaProductos(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock);
                         JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
                     }
                 }catch(NumberFormatException error)
@@ -165,7 +259,7 @@ public class Controlador implements ActionListener {
                     JOptionPane.showMessageDialog(null, "Error. El campo de existencias iniciales y costo unitario deben ser valores numéricos.");
                 } 
             } 
-        }//Fin botón añadir (pestaña2)
+        }//Fin botón añadirProducto.
         
         
         //Botón limpiarEntrada:-------------------
@@ -214,7 +308,7 @@ public class Controlador implements ActionListener {
                     if(añadirEntrada(codProducto,numFactura,nombreProveedor,costoDolares,tasaDeCambio,costoTotalPesos,cantEntrante) == true)
                     {
                         limpiarFormularioEntrada();
-
+                        añadirATablaEntradas(numFactura, codProducto, nombreProveedor, costoDolares, tasaDeCambio, costoTotalPesos, cantEntrante);
                         JOptionPane.showMessageDialog(null, "Entrada añadida exitosamente.");
                     }
                 }catch(NumberFormatException error)
@@ -225,12 +319,14 @@ public class Controlador implements ActionListener {
                 
         }//Fin botón aceptarEntrada
     }
-    //Fin actionPerformed()-----------------------------------------------------------------------------------
+    //FIN BOTONES*********************************************************************************************
     
-    /******************************************************************************************************/
     
-    //Método para añadir un producto a la base de datos:------------------------------------------------------
-    //retorna true si lo añade / false si ocurre algún error
+    
+    
+    
+    //AÑADIR REGISTROS:***************************************************************************************
+    
     public boolean añadirProducto(String codProducto,String descripcion,String grado,String exisIni,
                                   String entradas,String salidas,String costoUnitario,String stock)
     {
@@ -253,10 +349,8 @@ public class Controlador implements ActionListener {
     }
     //Fin añadirProducto()------------------------------------------------------------------------------------
     
-    /******************************************************************************************************/
+    //--------------------------------------------------------------------------------------------------------
     
-    //Método para añadir una entrada a la base de datos:------------------------------------------------------
-    //retorna true si lo añade / false si ocurre algún error.
     //En este método pueden haber valores nulos por lo cual la query se hace diferente 
     //dependiendo de si hay valores null o no, y en caso de haberlos entonces dependiendo de cuáles son nulos y cuáles no.
     public boolean añadirEntrada(String codProducto,String numFactura,String nombreProveedor,String costoDolares,
@@ -300,26 +394,43 @@ public class Controlador implements ActionListener {
     }
     //Fin añadirEntrada()------------------------------------------------------------------------------------
     
-    /******************************************************************************************************/
+    //FIN AÑADIR REGISTROS***********************************************************************************/
     
-    //Este método borrar todas las filas de la tabla de productos de la pestaña general-----------------------
+    
+    
+    
+    
+    //BORRAR TABLAS:******************************************************************************************
+    
     public void borrarTablaProductos()
     {
-        //En este caso se toma el número de filas que hay en la tabla y se va quitando 
-        //desde el último hácia el primero porque cada que se quita una fila, el número de filas
-        //disminuye, por lo tanto pretender remover las filas desde la primer hácia la última
-        //no sería posible.
-        for (int i = modelo.getRowCount() -1; i >= 0; i--)
+        for (int i = modeloProductos.getRowCount() -1; i >= 0; i--)
         {
-            modelo.removeRow(i);
+            modeloProductos.removeRow(i);
         }
     }
-    //Fin borrarTablaProductos()------------------------------------------------------------------------------
+    //Fin borrarTablaProductos()-------------------------------------------------------------------------------
     
-    /******************************************************************************************************/
+    //---------------------------------------------------------------------------------------------------------
     
-    //Método para actualizar la tabla de productos al agregar un producto:------------------------------------
-    public void actualizarTablaProductos(String codProducto, String descripcion, String grado, String exisIni, 
+    public void borrarTablaEntradas()
+    {
+        for (int i = modeloEntradas.getRowCount() -1; i >= 0; i--)
+        {
+            modeloEntradas.removeRow(i);
+        }
+    }
+    //Fin borrarTablaEntradas()------------------------------------------------------------------------------
+    
+    //FIN BORRAR TABLAS*************************************************************************************
+    
+    
+    
+    
+    
+    //AÑADIR A TABLAS:****************************************************************************************/
+    
+    public void añadirATablaProductos(String codProducto, String descripcion, String grado, String exisIni, 
                                          String entradas, String salidas, String costoUnitario, String stock)
     {
         Object []object = new Object[8];
@@ -332,14 +443,35 @@ public class Controlador implements ActionListener {
         object[6] = "$ "+costoUnitario;
         object[7] = stock;
                 
-        modelo.addRow(object);   
+        modeloProductos.addRow(object);   
     }
     //Fin actualizarTablaProductos()----------------------------------------------------------------------------
     
-    /******************************************************************************************************/
+    //----------------------------------------------------------------------------------------------------------
     
-    //Método para limpiar los campos de texto de la interfaz para añadir productos:-----------------------------
-    public void limpiarFormularioPestaña2()
+    public void añadirATablaEntradas(String numFactura, String codProducto, String proveedor, String costoEnDolares, 
+                                         String tasaDeCambio, String costoTotalPesos, String cantEntrante)
+    {
+        Object []object = new Object[7];
+        object[0] = numFactura;
+        object[1] = codProducto;
+        object[2] = proveedor;
+        object[3] = "US $ "+costoEnDolares; 
+        object[4] = tasaDeCambio;
+        object[5] = "$ "+costoTotalPesos;
+        object[6] = cantEntrante;
+                
+        modeloEntradas.addRow(object);   
+    }
+    //Fin actualizarTablaEntradas()----------------------------------------------------------------------------
+    
+    //FIN AÑADIR TABLAS****************************************************************************************
+    
+    
+    
+    
+    //LIMPIADORES:**********************************************************************************************
+    public void limpiarFormularioPestaña2() //cambiar nombre del método xd
     {
         vista.jtfCodigoProducto.setText("");
         vista.jtfDescripcion.setText("");
@@ -349,9 +481,8 @@ public class Controlador implements ActionListener {
     }
     //Fin limpiarFormularioPestaña2()---------------------------------------------------------------------------
     
-    /******************************************************************************************************/
+    //----------------------------------------------------------------------------------------------------------
     
-    //Método para limpiar los campos de texto de la interfaz para añadir entradas:-----------------------------
     public void limpiarFormularioEntrada()
     {
         vista.jtfP3CantidadEntrante.setText("");
@@ -364,7 +495,11 @@ public class Controlador implements ActionListener {
     }
     //Fin limpiarFormularioEntrada()---------------------------------------------------------------------------
     
-    /******************************************************************************************************/
+    //FIN LIMPIADORES******************************************************************************************
+    
+    
+    
+    
     
     //Método principal------------------------------------------------------------------------------------------
     public static void main(String args[]) {
