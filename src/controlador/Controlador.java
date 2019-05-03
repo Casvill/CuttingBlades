@@ -52,8 +52,7 @@ public class Controlador implements ActionListener {
     private Vista vista;
     private DefaultTableModel modeloProductos,modeloEntradas;
     private Conexion conexion;
-    
- 
+
     
     //Constructor:-------------------------------------------------------------------------------
     public Controlador(Vista vista) 
@@ -154,54 +153,74 @@ public class Controlador implements ActionListener {
     
     //BUSQUEDAS:***************************************************************************************************/
     
-    private void jtBusquedaPorCodigoProductoKeyReleased(java.awt.event.KeyEvent evt) {        
+    private void jtBusquedaPorCodigoProductoKeyReleased(java.awt.event.KeyEvent evt) 
+    {             
+        String busqueda="";
+        busqueda=vista.jtfBusquedaPorCodigoProducto.getText().trim();
         
-            String busqueda="";
-            busqueda=vista.jtfBusquedaPorCodigoProducto.getText().trim();
-            
+        //Esto es para evitar sql injection
+        if(busqueda.contains("'")) 
+        {
+            JOptionPane.showMessageDialog(null, "El campo de texto no puede incluir el caracter comilla (') ");
+            vista.jtfBusquedaPorCodigoProducto.setText("");
+        }
+        else 
+        {
             conexion.abrirConexion();
             ResultSet rs = conexion.ejecutarQueryResult("select * from productos where codigoproducto like '"+busqueda+"%'");
-        try 
-        {
-            borrarTablaProductos();
-            while(rs.next())
+            try 
             {
-                añadirATablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
-                        , rs.getString("entradas"), rs.getString("salidas"), rs.getString("costounitario"), rs.getString("stock"));
+                borrarTablaProductos();
+                while(rs.next())
+                {
+                    añadirATablaProductos(rs.getString("codigoproducto"), rs.getString("descripcion"), rs.getString("grado"), rs.getString("existenciasini")
+                            , rs.getString("entradas"), rs.getString("salidas"), rs.getString("costounitario"), rs.getString("stock"));
+                }
+                conexion.cerrarConexion();
+
+            } catch (SQLException error) 
+            {
+                JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
+                conexion.cerrarConexion();
             }
-            conexion.cerrarConexion();
-            
-        } catch (SQLException error) 
-        {
-            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
-            conexion.cerrarConexion();
         }
+        
     }     
     //Fin jtBusquedaPorCodigoKeyTyped()---------------------------------------------------------------------
     
     /******************************************************************************************************/
     
-    private void jtBusquedaPorNumFacturaEntradasKeyReleased(java.awt.event.KeyEvent evt) {        
-        
-            String busqueda="";
-            busqueda=vista.jtfBusquedaPorNumFactura.getText().trim();
+    private void jtBusquedaPorNumFacturaEntradasKeyReleased(java.awt.event.KeyEvent evt) 
+    {             
+        String busqueda="";
+        busqueda=vista.jtfBusquedaPorNumFactura.getText().trim();
             
+        //Esto es para evitar sql injection:
+        if(busqueda.contains("'")) 
+        {
+            JOptionPane.showMessageDialog(null, "El campo de texto no puede incluir el caracter comilla (') ");
+            vista.jtfBusquedaPorNumFactura.setText("");
+        }
+        
+        else
+        {
             conexion.abrirConexion();
             ResultSet rs = conexion.ejecutarQueryResult("select * from entradas where numfactura like '"+busqueda+"%'");
-        try 
-        {
-            borrarTablaEntradas();
-            while(rs.next())
+            try 
             {
-                añadirATablaEntradas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("nombreproveedor"), rs.getString("costodolares")
-                                        , rs.getString("tasadecambio"), rs.getString("costototalpesos"), rs.getString("cantentrante"));
+                borrarTablaEntradas();
+                while(rs.next())
+                {
+                    añadirATablaEntradas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("nombreproveedor"), rs.getString("costodolares")
+                                            , rs.getString("tasadecambio"), rs.getString("costototalpesos"), rs.getString("cantentrante"));
+                }
+                conexion.cerrarConexion();
+
+            } catch (SQLException error) 
+            {
+                JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
+                conexion.cerrarConexion();
             }
-            conexion.cerrarConexion();
-            
-        } catch (SQLException error) 
-        {
-            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
-            conexion.cerrarConexion();
         }
     }     
     //Fin jtBusquedaPorNumFacturaKeyTyped()---------------------------------------------------------------------
