@@ -18,8 +18,7 @@
 
 //ESTAS SON NOTAS QUE HE PUESTO Y DEBERÍA MIRAR:
 //Consultar
-//temporal
-//cambiar
+
 //----------------------------------------------------------------------------------------------------------
 //OTROS:
 //*Para tener en cuenta a la hora de hacer la lógica de entradas/salidas (movimientos):
@@ -29,9 +28,6 @@
 
 //*Hacer algo para que al ingresar un registro con una llave primaria repetida, no se muestre el mensaje de adv
 //que se está mostrando sino otro.
-
-//*Editar la pestaña registros, puede ser añadir dos botones para que la tabla cambie a la estructura entradas/salidas
-//dependiendo de lo que se quiera consultar.
 
 //CÓDIGO:-----------------------------------------------------------------------------------------------------
 
@@ -50,8 +46,12 @@ import vista.Vista;
 public class Controlador implements ActionListener {
     
     private Vista vista;
-    private DefaultTableModel modeloProductos,modeloEntradas;
+    private DefaultTableModel modeloProductos,modeloMovimientos;
     private Conexion conexion;
+    
+    //Esta variable es para controlar la busqueda en la tabla de registros, cambia según se oprima el botón Entradas / Salidas
+    //Su función principal está en: jtfBusquedaPorNumFacturaMovimientosKeyReleased
+    private boolean tablaMovimiento; //false entradas / true salidas
 
     
     //Constructor:-------------------------------------------------------------------------------
@@ -65,6 +65,8 @@ public class Controlador implements ActionListener {
         this.vista.jbAñadirProducto.addActionListener(this);
         this.vista.jbLimpiarEntrada.addActionListener(this);
         this.vista.jbAceptarEntrada.addActionListener(this);
+        this.vista.jbEntradas.addActionListener(this);
+        this.vista.jbSalidas.addActionListener(this);
         //Fin ActionListener.----------------------------------------
         
         
@@ -79,7 +81,7 @@ public class Controlador implements ActionListener {
         });
         this.vista.jtfBusquedaPorNumFactura.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
-                jtBusquedaPorNumFacturaEntradasKeyReleased(evt);
+                jtfBusquedaPorNumFacturaMovimientosKeyReleased(evt);
             }
         });
         //Fin Consultar.--------------------------------------------------------
@@ -87,13 +89,13 @@ public class Controlador implements ActionListener {
         
         //Modelos de tablas:--------
         modeloProductos = (DefaultTableModel) vista.jtProductos.getModel();
-        modeloEntradas = (DefaultTableModel) vista.jtRegistros.getModel();
+        modeloMovimientos = (DefaultTableModel) vista.jtRegistros.getModel();
        //Fin modelo de tabla------
        
        
        //Se llena la tabla de productos principal con los datos de la DB:
        extraerProductos();
-       extraerEntradas(); //temporal  cambiar a otro lugar
+       extraerEntradas();
        
        
        //Importar tabla de excel:-----------
@@ -147,6 +149,25 @@ public class Controlador implements ActionListener {
     }
     //Fin extraerEntradas()--------------------------------------------------------------------------------------
     
+    public void extraerSalidas()
+    {
+        conexion.abrirConexion();
+        ResultSet rs = conexion.ejecutarQueryResult("select * from salidas");
+        try
+        {
+            while(rs.next())
+            {
+                añadirATablaSalidas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("comprador"), rs.getString("preciounitario")
+                                        , rs.getString("preciototal"), rs.getString("cantsalient"));
+            }
+        }catch(SQLException | NullPointerException error)
+        {
+            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos:\n"+error.getMessage());
+        }
+        conexion.cerrarConexion();
+    }
+    //Fin extraerSalidas()--------------------------------------------------------------------------------------
+    
     //FIN EXTRACCIÓN DB******************************************************************************************
     
     
@@ -190,7 +211,7 @@ public class Controlador implements ActionListener {
     
     /******************************************************************************************************/
     
-    private void jtBusquedaPorNumFacturaEntradasKeyReleased(java.awt.event.KeyEvent evt) 
+    private void jtfBusquedaPorNumFacturaMovimientosKeyReleased(java.awt.event.KeyEvent evt) 
     {             
         String busqueda="";
         busqueda=vista.jtfBusquedaPorNumFactura.getText().trim();
@@ -204,23 +225,47 @@ public class Controlador implements ActionListener {
         
         else
         {
-            conexion.abrirConexion();
-            ResultSet rs = conexion.ejecutarQueryResult("select * from entradas where numfactura like '"+busqueda+"%'");
-            try 
+            if(tablaMovimiento == false)
             {
-                borrarTablaEntradas();
-                while(rs.next())
+                conexion.abrirConexion();
+                ResultSet rs = conexion.ejecutarQueryResult("select * from entradas where numfactura like '"+busqueda+"%'");
+                try 
                 {
-                    añadirATablaEntradas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("nombreproveedor"), rs.getString("costodolares")
-                                            , rs.getString("tasadecambio"), rs.getString("costototalpesos"), rs.getString("cantentrante"));
-                }
-                conexion.cerrarConexion();
+                    borrarTablaEntradas();
+                    while(rs.next())
+                    {
+                        añadirATablaEntradas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("nombreproveedor"), rs.getString("costodolares")
+                                                , rs.getString("tasadecambio"), rs.getString("costototalpesos"), rs.getString("cantentrante"));
+                    }
+                    conexion.cerrarConexion();
 
-            } catch (SQLException error) 
-            {
-                JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
-                conexion.cerrarConexion();
+                } catch (SQLException error) 
+                {
+                    JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
+                    conexion.cerrarConexion();
+                }
             }
+            else if(tablaMovimiento == true)
+            {
+                conexion.abrirConexion();
+                ResultSet rs = conexion.ejecutarQueryResult("select * from salidas where numfactura like '"+busqueda+"%'");
+                try 
+                {
+                    borrarTablaSalidas();
+                    while(rs.next())
+                    {
+                        añadirATablaSalidas(rs.getString("numfactura"), rs.getString("codigoproducto"), rs.getString("comprador"), rs.getString("preciounitario")
+                                        , rs.getString("preciototal"), rs.getString("cantsalient"));
+                    }
+                    conexion.cerrarConexion();
+
+                } catch (SQLException error) 
+                {
+                    JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos.");
+                    conexion.cerrarConexion();
+                }
+            }
+            
         }
     }     
     //Fin jtBusquedaPorNumFacturaKeyTyped()---------------------------------------------------------------------
@@ -269,7 +314,7 @@ public class Controlador implements ActionListener {
                     //se limpian los campos del formulario respectivo.
                     if(añadirProducto(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock) == true)
                     {
-                        limpiarFormularioPestaña2();
+                        limpiarFormularioAñadirProducto();
                         añadirATablaProductos(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock);
                         JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
                     }
@@ -337,6 +382,64 @@ public class Controlador implements ActionListener {
             }
                 
         }//Fin botón aceptarEntrada
+        
+        
+        //Botón Entradas (de registros)
+        if(e.getSource() == vista.jbEntradas)
+        {
+            tablaMovimiento=false; 
+            //Se cambia el modelo de la tabla para ser compatible con Entradas:-------
+            vista.jtRegistros.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "Número de factura", "Código del producto", "Proveedor", "Costo en dólares (Unitario)", "Tasa de cambio", "Costo total en pesos", "Cantidad entrante"
+            }
+            ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+            });//Fin cambio de modelo---------------------------------------------------
+            
+            //Se cambia el modelo de la tabla para poder usar el método añadirATablaMovimientos()
+            modeloMovimientos = (DefaultTableModel) vista.jtRegistros.getModel(); 
+            
+            //Se extraen los registros de Entradas:
+            extraerEntradas();
+        }
+        
+        if(e.getSource() == vista.jbSalidas)
+        {
+            tablaMovimiento = true;
+            //Se cambia el modelo de la tabla para ser compatible con Salidas:-------
+            vista.jtRegistros.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+
+            },
+            new String [] {
+                "Número de factura", "Código del producto", "Comprador", "Précio unitario", "Précio total", "Cantidad saliente"
+            }
+            ) {
+            boolean[] canEdit = new boolean [] {
+                false, false, false, false, false, false
+            };
+
+            public boolean isCellEditable(int rowIndex, int columnIndex) {
+                return canEdit [columnIndex];
+            }
+            });//Fin cambio de modelo--------------------------------------------------
+            
+            //Se cambia el modelo de la tabla para poder usar el método añadirATablaMovimientos()
+            modeloMovimientos = (DefaultTableModel) vista.jtRegistros.getModel();
+            
+            //Se extraen los registros de Entradas:
+            extraerSalidas();
+        }
     }
     //FIN BOTONES*********************************************************************************************
     
@@ -434,9 +537,18 @@ public class Controlador implements ActionListener {
     
     public void borrarTablaEntradas()
     {
-        for (int i = modeloEntradas.getRowCount() -1; i >= 0; i--)
+        for (int i = modeloMovimientos.getRowCount() -1; i >= 0; i--)
         {
-            modeloEntradas.removeRow(i);
+            modeloMovimientos.removeRow(i);
+        }
+    }
+    //Fin borrarTablaEntradas()------------------------------------------------------------------------------
+    
+    public void borrarTablaSalidas()
+    {
+        for (int i = modeloMovimientos.getRowCount() -1; i >= 0; i--)
+        {
+            modeloMovimientos.removeRow(i);
         }
     }
     //Fin borrarTablaEntradas()------------------------------------------------------------------------------
@@ -480,7 +592,22 @@ public class Controlador implements ActionListener {
         object[5] = "$ "+costoTotalPesos;
         object[6] = cantEntrante;
                 
-        modeloEntradas.addRow(object);   
+        modeloMovimientos.addRow(object);   
+    }
+    //Fin actualizarTablaEntradas()----------------------------------------------------------------------------
+    
+    public void añadirATablaSalidas(String numFactura, String codProducto, String comprador, String precioUnitario, 
+                                         String precioTotal, String cantSaliente)
+    {
+        Object []object = new Object[6];
+        object[0] = numFactura;
+        object[1] = codProducto;
+        object[2] = comprador;
+        object[3] = "$ "+precioUnitario; 
+        object[4] = "$ "+precioTotal;
+        object[5] = cantSaliente;
+                
+        modeloMovimientos.addRow(object);   
     }
     //Fin actualizarTablaEntradas()----------------------------------------------------------------------------
     
@@ -490,7 +617,7 @@ public class Controlador implements ActionListener {
     
     
     //LIMPIADORES:**********************************************************************************************
-    public void limpiarFormularioPestaña2() //cambiar nombre del método xd
+    public void limpiarFormularioAñadirProducto() 
     {
         vista.jtfCodigoProducto.setText("");
         vista.jtfDescripcion.setText("");

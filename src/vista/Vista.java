@@ -66,6 +66,8 @@ public class Vista extends javax.swing.JFrame {
         jtfBusquedaPorNumFactura = new javax.swing.JTextField();
         jScrollPane4 = new javax.swing.JScrollPane();
         jtRegistros = new javax.swing.JTable();
+        jbEntradas = new javax.swing.JButton();
+        jbSalidas = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -114,7 +116,7 @@ public class Vista extends javax.swing.JFrame {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 879, Short.MAX_VALUE)
+                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 881, Short.MAX_VALUE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addComponent(jlBusquedaPorCodigo)
                         .addGap(18, 18, 18)
@@ -508,6 +510,13 @@ public class Vista extends javax.swing.JFrame {
             }
         });
         jScrollPane4.setViewportView(jtRegistros);
+        if (jtRegistros.getColumnModel().getColumnCount() > 0) {
+            jtRegistros.getColumnModel().getColumn(5).setHeaderValue("Costo total en pesos");
+        }
+
+        jbEntradas.setText("Entradas");
+
+        jbSalidas.setText("Salidas");
 
         javax.swing.GroupLayout jPanel5Layout = new javax.swing.GroupLayout(jPanel5);
         jPanel5.setLayout(jPanel5Layout);
@@ -521,6 +530,10 @@ public class Vista extends javax.swing.JFrame {
                         .addComponent(jlBusquedaPorNumDeFactura)
                         .addGap(18, 18, 18)
                         .addComponent(jtfBusquedaPorNumFactura, javax.swing.GroupLayout.PREFERRED_SIZE, 142, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(34, 34, 34)
+                        .addComponent(jbEntradas)
+                        .addGap(27, 27, 27)
+                        .addComponent(jbSalidas, javax.swing.GroupLayout.PREFERRED_SIZE, 76, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
@@ -533,7 +546,10 @@ public class Vista extends javax.swing.JFrame {
                         .addComponent(jlBusquedaPorNumDeFactura))
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel5Layout.createSequentialGroup()
                         .addContainerGap()
-                        .addComponent(jtfBusquedaPorNumFactura, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(jPanel5Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                            .addComponent(jtfBusquedaPorNumFactura, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(jbEntradas)
+                            .addComponent(jbSalidas))))
                 .addGap(18, 18, 18)
                 .addComponent(jScrollPane4, javax.swing.GroupLayout.DEFAULT_SIZE, 549, Short.MAX_VALUE)
                 .addContainerGap())
@@ -578,7 +594,9 @@ public class Vista extends javax.swing.JFrame {
     private javax.swing.JTabbedPane jTabbedPane1;
     public javax.swing.JButton jbAceptarEntrada;
     public javax.swing.JButton jbAñadirProducto;
+    public javax.swing.JButton jbEntradas;
     public javax.swing.JButton jbLimpiarEntrada;
+    public javax.swing.JButton jbSalidas;
     private javax.swing.JLabel jlBusquedaPorCodigo;
     private javax.swing.JLabel jlBusquedaPorNumDeFactura;
     private javax.swing.JLabel jlCodigoProducto;
