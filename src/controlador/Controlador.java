@@ -14,11 +14,13 @@
 //AÑADIR REGISTROS: Métodos para añadir registros a la DB. Retornan true si lo añade / false si ocurre algún error.
 
 //LIMPIADORES: Métodos para limpiar campos de textos de formularios.
+
+//AUTOCOMPLETADORES: Métodos para buscar coincidencias con lo que se está escribiendo y llenar el campo de texto
+//                   al darle enter o click.
 //----------------------------------------------------------------------------------------------------------
 
 //ESTAS SON NOTAS QUE HE PUESTO Y DEBERÍA MIRAR:
 //Consultar
-
 //----------------------------------------------------------------------------------------------------------
 //OTROS:
 //*Para tener en cuenta a la hora de hacer la lógica de entradas/salidas (movimientos):
@@ -32,6 +34,8 @@
 //CÓDIGO:-----------------------------------------------------------------------------------------------------
 
 package controlador;
+
+import com.mxrck.autocompleter.TextAutoCompleter; 
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -51,7 +55,10 @@ public class Controlador implements ActionListener {
     
     //Esta variable es para controlar la busqueda en la tabla de registros, cambia según se oprima el botón Entradas / Salidas
     //Su función principal está en: jtfBusquedaPorNumFacturaMovimientosKeyReleased
-    private boolean tablaMovimiento; //false entradas / true salidas
+    private boolean setTablaMovimiento; //false entradas / true salidas
+    
+    
+    private TextAutoCompleter textAutoCompleterEntrada; 
 
     
     //Constructor:-------------------------------------------------------------------------------
@@ -60,6 +67,7 @@ public class Controlador implements ActionListener {
         this.vista = vista;  
         this.vista.setVisible(true);
         conexion = new Conexion();
+          
         
         //ActionListeners:-------------------------------------------
         this.vista.jbAñadirProducto.addActionListener(this);
@@ -76,7 +84,7 @@ public class Controlador implements ActionListener {
         //En este video explican un poco los eventos del teclado: https://www.youtube.com/watch?v=_BWYtHNmKCc
         this.vista.jtfBusquedaPorCodigoProducto.addKeyListener(new java.awt.event.KeyAdapter() {
             public void keyReleased(java.awt.event.KeyEvent evt) {
-                jtBusquedaPorCodigoProductoKeyReleased(evt);
+                jtfBusquedaPorCodigoProductoKeyReleased(evt);
             }
         });
         this.vista.jtfBusquedaPorNumFactura.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -84,24 +92,33 @@ public class Controlador implements ActionListener {
                 jtfBusquedaPorNumFacturaMovimientosKeyReleased(evt);
             }
         });
-        //Fin Consultar.--------------------------------------------------------
+        //Fin Consultar.-------------------------------------------------------------------------------------
         
         
-        //Modelos de tablas:--------
-        modeloProductos = (DefaultTableModel) vista.jtProductos.getModel();
-        modeloMovimientos = (DefaultTableModel) vista.jtRegistros.getModel();
-       //Fin modelo de tabla------
+        //Modelos de tablas:------------------------------------------------------
+        modeloProductos = (DefaultTableModel) this.vista.jtProductos.getModel();
+        modeloMovimientos = (DefaultTableModel) this.vista.jtRegistros.getModel();
+       //Fin modelo de tabla------------------------------------------------------
        
        
-       //Se llena la tabla de productos principal con los datos de la DB:
+       //Se extraen datos de la DB:-
        extraerProductos();
        extraerEntradas();
+       //Fin de extacción.----------
        
        
        //Importar tabla de excel:-----------
        DropXlsx drop = new DropXlsx();
-       drop.setJtable(vista.jtImportar);
+       drop.setJtable(this.vista.jtImportar);
        //Fin importar tabla de excel--------
+       
+       
+       //Auto completadores de texto:---------------------------------------------------------------------------------
+       textAutoCompleterEntrada = new TextAutoCompleter(this.vista.jtfFormularioEntradaCodProducto);
+       autoCompletadorDeTextoDeCodigoProducto(textAutoCompleterEntrada, this.vista.jtfFormularioEntradaCodProducto.getText().trim());
+       //Fin auto completadores de texto.-----------------------------------------------------------------------------
+       
+       
     }
     //Fin Constructor----------------------------------------------------------------------------------------
     
@@ -174,7 +191,7 @@ public class Controlador implements ActionListener {
     
     //BUSQUEDAS:***************************************************************************************************/
     
-    private void jtBusquedaPorCodigoProductoKeyReleased(java.awt.event.KeyEvent evt) 
+    private void jtfBusquedaPorCodigoProductoKeyReleased(java.awt.event.KeyEvent evt) 
     {             
         String busqueda="";
         busqueda=vista.jtfBusquedaPorCodigoProducto.getText().trim();
@@ -207,7 +224,7 @@ public class Controlador implements ActionListener {
         }
         
     }     
-    //Fin jtBusquedaPorCodigoKeyTyped()---------------------------------------------------------------------
+    //Fin jtfBusquedaPorCodigoProductoKeyReleased()---------------------------------------------------------------------
     
     /******************************************************************************************************/
     
@@ -225,7 +242,7 @@ public class Controlador implements ActionListener {
         
         else
         {
-            if(tablaMovimiento == false)
+            if(!setTablaMovimiento)
             {
                 conexion.abrirConexion();
                 ResultSet rs = conexion.ejecutarQueryResult("select * from entradas where numfactura like '"+busqueda+"%'");
@@ -245,7 +262,7 @@ public class Controlador implements ActionListener {
                     conexion.cerrarConexion();
                 }
             }
-            else if(tablaMovimiento == true)
+            else if(setTablaMovimiento)
             {
                 conexion.abrirConexion();
                 ResultSet rs = conexion.ejecutarQueryResult("select * from salidas where numfactura like '"+busqueda+"%'");
@@ -268,7 +285,7 @@ public class Controlador implements ActionListener {
             
         }
     }     
-    //Fin jtBusquedaPorNumFacturaKeyTyped()---------------------------------------------------------------------
+    //Fin jtfBusquedaPorNumFacturaMovimientosKeyReleased()---------------------------------------------------------------------
     
     //FIN BUSQUEDAS*********************************************************************************************
     
@@ -284,11 +301,11 @@ public class Controlador implements ActionListener {
         if(e.getSource() == vista.jbAñadirProducto)
         {   
             //Se verifica que ningún campo esté vacío:
-            if(vista.jtfCodigoProducto.getText().equals("") || 
-               vista.jtfDescripcion.getText().equals("") ||
-               vista.jtfGrado.getText().equals("") ||
-               vista.jtfExistenciasIniciales.getText().equals("") ||
-               vista.jtfCostoUnitario.getText().equals("")   )
+            if(vista.jtfFormularioAddProductoCodigoProducto.getText().equals("") || 
+               vista.jtfFormularioAddProductoDescripcion.getText().equals("") ||
+               vista.jtfFormularioAddProductoGrado.getText().equals("") ||
+               vista.jtfFormularioAddProductoExistenciasIniciales.getText().equals("") ||
+               vista.jtfFormularioAddProductoCostoUnitario.getText().equals("")   )
             {
                 JOptionPane.showMessageDialog(null, "No puede haber ningún campo vacío.", "Error", JOptionPane.WARNING_MESSAGE);
             }
@@ -296,12 +313,12 @@ public class Controlador implements ActionListener {
             //Si ningún campo está vacío, se guardan los valores introducidos:
             else
             { 
-                String codProducto=vista.jtfCodigoProducto.getText().trim();
-                String descripcion=vista.jtfDescripcion.getText().trim();
-                String grado = vista.jtfGrado.getText().trim();
-                String exisIni = vista.jtfExistenciasIniciales.getText().trim();
-                String costoUnitario = vista.jtfCostoUnitario.getText().trim();
-                String stock = vista.jtfExistenciasIniciales.getText().trim();
+                String codProducto=vista.jtfFormularioAddProductoCodigoProducto.getText().trim();
+                String descripcion=vista.jtfFormularioAddProductoDescripcion.getText().trim();
+                String grado = vista.jtfFormularioAddProductoGrado.getText().trim();
+                String exisIni = vista.jtfFormularioAddProductoExistenciasIniciales.getText().trim();
+                String costoUnitario = vista.jtfFormularioAddProductoCostoUnitario.getText().trim();
+                String stock = vista.jtfFormularioAddProductoExistenciasIniciales.getText().trim();
                 
                 //Se valida que los campos existenciInicial y costoUnitario sean valores numéricos:
                 try
@@ -316,6 +333,7 @@ public class Controlador implements ActionListener {
                     {
                         limpiarFormularioAñadirProducto();
                         añadirATablaProductos(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock);
+                        textAutoCompleterEntrada.addItem(codProducto);
                         JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
                     }
                 }catch(NumberFormatException error)
@@ -336,24 +354,25 @@ public class Controlador implements ActionListener {
         //Botón aceptarEntrada:-------------------
         if(e.getSource() == vista.jbAceptarEntrada)
         {
-            if(vista.jtfP3CantidadEntrante.getText().equals("") ||
-               vista.jtfP3CodProducto.getText().equals("") ||
-               vista.jtfP3CostoTotalPesos.getText().equals("") ||
-               vista.jtfP3NomProveedor.getText().equals("") ||
-               vista.jtfP3NumFactura.getText().equals(""))
+            //Se verifica que ningún campo obligatorio esté vacío:
+            if(vista.jtfFormularioEntradaCantidadEntrante.getText().equals("") ||
+               vista.jtfFormularioEntradaCodProducto.getText().equals("") ||
+               vista.jtfFormularioEntradaCostoTotalPesos.getText().equals("") ||
+               vista.jtfFormularioEntradaNomProveedor.getText().equals("") ||
+               vista.jtfFormularioEntradaNumFactura.getText().equals(""))
             {
                 JOptionPane.showMessageDialog(null, "Los campos marcados con un asterisco (*) no pueden estar vacíos.", "Error", JOptionPane.WARNING_MESSAGE);
             }
             
             else
             {
-                String codProducto = vista.jtfP3CodProducto.getText();
-                String numFactura = vista.jtfP3NumFactura.getText();
-                String nombreProveedor = vista.jtfP3NomProveedor.getText();
-                String costoDolares = vista.jtfP3CostoDolares.getText();
-                String tasaDeCambio = vista.jtfP3TasaCambio.getText();
-                String costoTotalPesos = vista.jtfP3CostoTotalPesos.getText();
-                String cantEntrante = vista.jtfP3CantidadEntrante.getText();
+                String codProducto = vista.jtfFormularioEntradaCodProducto.getText().trim();
+                String numFactura = vista.jtfFormularioEntradaNumFactura.getText().trim();
+                String nombreProveedor = vista.jtfFormularioEntradaNomProveedor.getText().trim();
+                String costoDolares = vista.jtfFormularioEntradaCostoDolares.getText().trim();
+                String tasaDeCambio = vista.jtfFormularioEntradaTasaCambio.getText().trim();
+                String costoTotalPesos = vista.jtfFormularioEntradaCostoTotalPesos.getText().trim();
+                String cantEntrante = vista.jtfFormularioEntradaCantidadEntrante.getText().trim();
                 
                 try
                 {
@@ -369,7 +388,7 @@ public class Controlador implements ActionListener {
                     Integer.parseInt(cantEntrante);
                     Float.parseFloat(costoTotalPesos);
                     
-                    if(añadirEntrada(codProducto,numFactura,nombreProveedor,costoDolares,tasaDeCambio,costoTotalPesos,cantEntrante) == true)
+                    if(añadirEntrada(codProducto,numFactura,nombreProveedor,costoDolares,tasaDeCambio,costoTotalPesos,cantEntrante))
                     {
                         limpiarFormularioEntrada();
                         añadirATablaEntradas(numFactura, codProducto, nombreProveedor, costoDolares, tasaDeCambio, costoTotalPesos, cantEntrante);
@@ -387,57 +406,63 @@ public class Controlador implements ActionListener {
         //Botón Entradas (de registros)
         if(e.getSource() == vista.jbEntradas)
         {
-            tablaMovimiento=false; 
+            setTablaMovimiento=false; 
+            
             //Se cambia el modelo de la tabla para ser compatible con Entradas:-------
-            vista.jtRegistros.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
+            vista.jtRegistros.setModel(new javax.swing.table.DefaultTableModel
+            (
+                new Object [][] {},
+                new String [] 
+                {
+                    "Número de factura", "Código del producto", "Proveedor", "Costo en dólares (Unitario)", "Tasa de cambio", "Costo total en pesos", "Cantidad entrante"
+                }
+            ) 
+            {
+                boolean[] canEdit = new boolean [] 
+                {
+                    false, false, false, false, false, false, false
+                };
 
-            },
-            new String [] {
-                "Número de factura", "Código del producto", "Proveedor", "Costo en dólares (Unitario)", "Tasa de cambio", "Costo total en pesos", "Cantidad entrante"
-            }
-            ) {
-            boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false, false
-            };
-
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return canEdit [columnIndex];
-            }
+                public boolean isCellEditable(int rowIndex, int columnIndex) 
+                {
+                    return canEdit [columnIndex];
+                }
             });//Fin cambio de modelo---------------------------------------------------
             
             //Se cambia el modelo de la tabla para poder usar el método añadirATablaMovimientos()
             modeloMovimientos = (DefaultTableModel) vista.jtRegistros.getModel(); 
             
-            //Se extraen los registros de Entradas:
             extraerEntradas();
         }
         
         if(e.getSource() == vista.jbSalidas)
         {
-            tablaMovimiento = true;
+            setTablaMovimiento = true;
+            
             //Se cambia el modelo de la tabla para ser compatible con Salidas:-------
-            vista.jtRegistros.setModel(new javax.swing.table.DefaultTableModel(
-            new Object [][] {
+            vista.jtRegistros.setModel(new javax.swing.table.DefaultTableModel
+            (
+                new Object [][] {},
+                new String [] 
+                {
+                    "Número de factura", "Código del producto", "Comprador", "Précio unitario", "Précio total", "Cantidad saliente"
+                }
+            ) 
+            {
+                boolean[] canEdit = new boolean [] 
+                {
+                    false, false, false, false, false, false
+                };
 
-            },
-            new String [] {
-                "Número de factura", "Código del producto", "Comprador", "Précio unitario", "Précio total", "Cantidad saliente"
-            }
-            ) {
-            boolean[] canEdit = new boolean [] {
-                false, false, false, false, false, false
-            };
-
-            public boolean isCellEditable(int rowIndex, int columnIndex) {
-                return canEdit [columnIndex];
-            }
+                public boolean isCellEditable(int rowIndex, int columnIndex) 
+                {
+                    return canEdit [columnIndex];
+                }
             });//Fin cambio de modelo--------------------------------------------------
             
             //Se cambia el modelo de la tabla para poder usar el método añadirATablaMovimientos()
             modeloMovimientos = (DefaultTableModel) vista.jtRegistros.getModel();
             
-            //Se extraen los registros de Entradas:
             extraerSalidas();
         }
     }
@@ -587,7 +612,12 @@ public class Controlador implements ActionListener {
         object[0] = numFactura;
         object[1] = codProducto;
         object[2] = proveedor;
-        object[3] = "US $ "+costoEnDolares; 
+        
+        if(costoEnDolares == null)
+            object[3] = "";
+        else
+            object[3] = "US $ "+costoEnDolares; 
+        
         object[4] = tasaDeCambio;
         object[5] = "$ "+costoTotalPesos;
         object[6] = cantEntrante;
@@ -616,32 +646,58 @@ public class Controlador implements ActionListener {
     
     
     
+    
     //LIMPIADORES:**********************************************************************************************
     public void limpiarFormularioAñadirProducto() 
     {
-        vista.jtfCodigoProducto.setText("");
-        vista.jtfDescripcion.setText("");
-        vista.jtfGrado.setText("");        
-        vista.jtfExistenciasIniciales.setText("");        
-        vista.jtfCostoUnitario.setText("");
+        vista.jtfFormularioAddProductoCodigoProducto.setText("");
+        vista.jtfFormularioAddProductoDescripcion.setText("");
+        vista.jtfFormularioAddProductoGrado.setText("");        
+        vista.jtfFormularioAddProductoExistenciasIniciales.setText("");        
+        vista.jtfFormularioAddProductoCostoUnitario.setText("");
     }
-    //Fin limpiarFormularioPestaña2()---------------------------------------------------------------------------
+    //Fin limpiarFormularioAñadirProducto()---------------------------------------------------------------------------
     
     //----------------------------------------------------------------------------------------------------------
     
     public void limpiarFormularioEntrada()
     {
-        vista.jtfP3CantidadEntrante.setText("");
-        vista.jtfP3CodProducto.setText("");
-        vista.jtfP3CostoDolares.setText("");
-        vista.jtfP3CostoTotalPesos.setText("");
-        vista.jtfP3NomProveedor.setText("");
-        vista.jtfP3NumFactura.setText("");
-        vista.jtfP3TasaCambio.setText("");
+        vista.jtfFormularioEntradaCantidadEntrante.setText("");
+        vista.jtfFormularioEntradaCodProducto.setText("");
+        vista.jtfFormularioEntradaCostoDolares.setText("");
+        vista.jtfFormularioEntradaCostoTotalPesos.setText("");
+        vista.jtfFormularioEntradaNomProveedor.setText("");
+        vista.jtfFormularioEntradaNumFactura.setText("");
+        vista.jtfFormularioEntradaTasaCambio.setText("");
     }
     //Fin limpiarFormularioEntrada()---------------------------------------------------------------------------
     
     //FIN LIMPIADORES******************************************************************************************
+    
+    
+    
+    
+    
+    //AUTOCOMPLETADORES:**********************************************************************************************
+    public void autoCompletadorDeTextoDeCodigoProducto(TextAutoCompleter textAutoCompleter, String codigoBuscado)
+    {
+        conexion.abrirConexion();
+        ResultSet rs = conexion.ejecutarQueryResult("select * from productos where codigoproducto like '"+codigoBuscado+"%'");
+        try 
+        {
+            while(rs.next())
+            {
+                textAutoCompleter.addItem(rs.getString("codigoproducto"));
+            }
+            conexion.cerrarConexion();
+
+        } catch (SQLException error) 
+        {
+            conexion.cerrarConexion();
+        }
+    }//fin autocompletadorDeTextoDeCodigoProducto()
+    
+    //FIN AUTOCOMPLETADORES******************************************************************************************
     
     
     
