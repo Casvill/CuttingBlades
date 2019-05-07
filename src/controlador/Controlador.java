@@ -102,8 +102,8 @@ public class Controlador implements ActionListener {
        
        
        //Se extraen datos de la DB:-
-       extraerProductos();
-       extraerEntradas();
+       extraerProductosDeDB();
+       extraerEntradasDeDB();
        //Fin de extacción.----------
        
        
@@ -126,7 +126,7 @@ public class Controlador implements ActionListener {
     
     //EXTRACCIÓN DB:****************************************************************************************/
     
-    public void extraerProductos()
+    public void extraerProductosDeDB()
     {
         conexion.abrirConexion();
         ResultSet rs = conexion.ejecutarQueryResult("select * from productos");
@@ -139,7 +139,7 @@ public class Controlador implements ActionListener {
             }
         }catch(SQLException | NullPointerException error)
         {
-            JOptionPane.showMessageDialog(null, "Error al tratar de recuperar los datos de la base de datos:\n"+error.getMessage());
+            JOptionPane.showMessageDialog(vista, "Error al tratar de recuperar los datos de la base de datos:\n"+error.getMessage());
         }
         conexion.cerrarConexion();
     }
@@ -147,7 +147,7 @@ public class Controlador implements ActionListener {
     
     //-----------------------------------------------------------------------------------------------------------------------
     
-    public void extraerEntradas()
+    public void extraerEntradasDeDB()
     {
         conexion.abrirConexion();
         ResultSet rs = conexion.ejecutarQueryResult("select * from entradas");
@@ -307,7 +307,7 @@ public class Controlador implements ActionListener {
                vista.jtfFormularioAddProductoExistenciasIniciales.getText().equals("") ||
                vista.jtfFormularioAddProductoCostoUnitario.getText().equals("")   )
             {
-                JOptionPane.showMessageDialog(null, "No puede haber ningún campo vacío.", "Error", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(vista, "No puede haber ningún campo vacío.", "Error", JOptionPane.WARNING_MESSAGE);
             }
             
             //Si ningún campo está vacío, se guardan los valores introducidos:
@@ -326,7 +326,7 @@ public class Controlador implements ActionListener {
                     //Se hace el parseo de los campos existenciaInicial y costoUnitario:
                     Integer.parseInt(exisIni);
                     Float.parseFloat(costoUnitario);
-                    
+
                     //En caso de que no haya ningún error, se añade el nuevo producto a la DB y al jTable de productos,
                     //se limpian los campos del formulario respectivo.
                     if(añadirProducto(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock) == true)
@@ -334,11 +334,12 @@ public class Controlador implements ActionListener {
                         limpiarFormularioAñadirProducto();
                         añadirATablaProductos(codProducto,descripcion,grado,exisIni,"0","0",costoUnitario,stock);
                         textAutoCompleterEntrada.addItem(codProducto);
-                        JOptionPane.showMessageDialog(null, "Producto añadido exitosamente.");
+                        JOptionPane.showMessageDialog(vista, "Producto añadido exitosamente.");
                     }
+                    
                 }catch(NumberFormatException error)
                 {
-                    JOptionPane.showMessageDialog(null, "Error. El campo de existencias iniciales y costo unitario deben ser valores numéricos.");
+                    JOptionPane.showMessageDialog(vista, "El campo de existencias iniciales y costo unitario deben ser valores numéricos.", "Error", JOptionPane.WARNING_MESSAGE);
                 } 
             } 
         }//Fin botón añadirProducto.
@@ -361,7 +362,14 @@ public class Controlador implements ActionListener {
                vista.jtfFormularioEntradaNomProveedor.getText().equals("") ||
                vista.jtfFormularioEntradaNumFactura.getText().equals(""))
             {
-                JOptionPane.showMessageDialog(null, "Los campos marcados con un asterisco (*) no pueden estar vacíos.", "Error", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(vista, "Los campos marcados con un asterisco (*) no pueden estar vacíos.", "Error", JOptionPane.WARNING_MESSAGE);
+            }
+            
+            //Se verifica que la cantidad de productos entrante sea 1 como mínimo:
+            else if(Integer.parseInt(vista.jtfFormularioEntradaCantidadEntrante.getText()) < 1)
+            {
+                JOptionPane.showMessageDialog(vista, "La cantidad de productos entrante debe ser mínimo 1", "Error", JOptionPane.WARNING_MESSAGE);
+                vista.jtfFormularioEntradaCantidadEntrante.setText("");
             }
             
             else
@@ -388,15 +396,24 @@ public class Controlador implements ActionListener {
                     Integer.parseInt(cantEntrante);
                     Float.parseFloat(costoTotalPesos);
                     
-                    if(añadirEntrada(codProducto,numFactura,nombreProveedor,costoDolares,tasaDeCambio,costoTotalPesos,cantEntrante))
+                    if(verificarExistenciaDelProducto(codProducto))
                     {
-                        limpiarFormularioEntrada();
-                        añadirATablaEntradas(numFactura, codProducto, nombreProveedor, costoDolares, tasaDeCambio, costoTotalPesos, cantEntrante);
-                        JOptionPane.showMessageDialog(null, "Entrada añadida exitosamente.");
+                        if(añadirEntrada(codProducto,numFactura,nombreProveedor,costoDolares,tasaDeCambio,costoTotalPesos,cantEntrante))
+                        {
+                            limpiarFormularioEntrada();
+                            añadirATablaEntradas(numFactura, codProducto, nombreProveedor, costoDolares, tasaDeCambio, costoTotalPesos, cantEntrante);
+                            actualizarProductoPorEntrada(codProducto, Integer.parseInt(cantEntrante), Float.parseFloat(costoTotalPesos));
+                            JOptionPane.showMessageDialog(vista, "Entrada añadida exitosamente.");
+                        }
                     }
+                    
+                    else
+                        JOptionPane.showMessageDialog(vista, "El código de producto '"+codProducto+"' no se encuentra registrado en la base de datos.", "Error", JOptionPane.WARNING_MESSAGE);
+                    
+                    
                 }catch(NumberFormatException error)
                 {
-                    JOptionPane.showMessageDialog(null, "Error. Los campos Numero de factura, Cantidad Entrante y Costo total en pesos deben ser valores numéricos.");
+                    JOptionPane.showMessageDialog(vista, "Los campos Numero de factura, Cantidad Entrante y Costo total en pesos deben ser valores numéricos.", "Error", JOptionPane.WARNING_MESSAGE);
                 } 
             }
                 
@@ -432,7 +449,7 @@ public class Controlador implements ActionListener {
             //Se cambia el modelo de la tabla para poder usar el método añadirATablaMovimientos()
             modeloMovimientos = (DefaultTableModel) vista.jtRegistros.getModel(); 
             
-            extraerEntradas();
+            extraerEntradasDeDB();
         }
         
         if(e.getSource() == vista.jbSalidas)
@@ -695,9 +712,56 @@ public class Controlador implements ActionListener {
         {
             conexion.cerrarConexion();
         }
-    }//fin autocompletadorDeTextoDeCodigoProducto()
+    }//fin autocompletadorDeTextoDeCodigoProducto()-----------------------------------------------------------------
     
     //FIN AUTOCOMPLETADORES******************************************************************************************
+    
+    
+    
+    
+    
+    public boolean verificarExistenciaDelProducto(String codigoDelProducto)
+    {
+        for (int i = 0; i < modeloProductos.getRowCount(); i++) 
+        {
+            if(codigoDelProducto.equals(modeloProductos.getValueAt(i, 0)))
+                return true;
+        }
+        return false;
+    }//Fin verificarExistenciaDelProducto()-------------------------------
+    
+    
+
+    public void actualizarProductoPorEntrada(String codigoProducto, int cantidadEntrante, float costoTotalPesos)
+    {
+        float nuevoCostoUnitario=0;
+        float anteriorCostoUnitario=0;
+        int stock=0;
+        
+        //Se buscan los valores stock y costoUnitario desde la tabla de productos
+        for (int i = 0; i < modeloProductos.getRowCount(); i++) 
+        {
+            if(codigoProducto.equals(modeloProductos.getValueAt(i, 0)))
+            {
+                stock = Integer.parseInt((String) modeloProductos.getValueAt(i, 7));
+                //Este valor primero se castea a String, luego se le quita la parte "$ ", y luego se parsea a float:
+                anteriorCostoUnitario =  Float.parseFloat(((String) modeloProductos.getValueAt(i, 6)).substring(1,((String) modeloProductos.getValueAt(i, 6)).length())); 
+            }
+        }
+        
+        //Se hace la operación para hallar el costo unitario ponderado
+        nuevoCostoUnitario = ( (anteriorCostoUnitario * stock) + costoTotalPesos ) / (stock + cantidadEntrante);
+        
+        //Se actualiza la base de datos según los datos de la entrada
+        conexion.abrirConexion();
+        conexion.ejecutarQuery("UPDATE productos SET costounitario="+nuevoCostoUnitario+", entradas=entradas+"+cantidadEntrante+", stock=stock+"+cantidadEntrante+" WHERE codigoproducto='"+codigoProducto+"';");
+        conexion.cerrarConexion();
+        
+        
+        //Se actualiza la tabla de productos con los cambios hechos en la DB
+        borrarTablaProductos();
+        extraerProductosDeDB();
+    }//Fin actualizaProductoPorEntrada()------------------------------------------------------------------------
     
     
     
