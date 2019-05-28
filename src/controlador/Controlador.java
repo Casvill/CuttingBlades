@@ -1,3 +1,6 @@
+/*Daniel Castillo Villamarín
+  Correo: castillo.daniel@correounivalle.edu.co 
+*/
 //PARA BUSCAR RÁPIDO, ESTA CLASE ESTÁ DIVIDIDA EN AGRUPACIONES QUE SE PUEDEN BUSCAR ASÍ:
 
 //EXTRACCIÓN DB: Métodos que extraen la info completa de la db y la pone en sus respectivas tablas.
