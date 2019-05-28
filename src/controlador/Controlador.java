@@ -23,11 +23,6 @@
 //Consultar
 //----------------------------------------------------------------------------------------------------------
 //OTROS:
-//*Para tener en cuenta a la hora de hacer la lógica de entradas/salidas (movimientos):
-//update productos set stock = ((existenciasini + entradas)-salidas)
-//Cada que haya una entrada, el costo unitario del producto cambia así:
-//costoUnitario = ( (costoUnitario * stock) + (costoUnitarioEntrante * cantEntrante) ) / (stock + cantEntrante)
-
 //*Hacer algo para que al ingresar un registro con una llave primaria repetida, no se muestre el mensaje de adv
 //que se está mostrando sino otro.
 
@@ -101,7 +96,7 @@ public class Controlador implements ActionListener {
        //Fin modelo de tabla------------------------------------------------------
        
        
-       //Se extraen datos de la DB:-
+       //Se extraen datos de la DB y se ponen en sus tablas respectivas:
        extraerProductosDeDB();
        extraerEntradasDeDB();
        //Fin de extacción.----------
@@ -245,7 +240,7 @@ public class Controlador implements ActionListener {
             if(!setTablaMovimiento)
             {
                 conexion.abrirConexion();
-                ResultSet rs = conexion.ejecutarQueryResult("select * from entradas where numfactura like '"+busqueda+"%'");
+                ResultSet rs = conexion.ejecutarQueryResult("select * from entradas where codigoproducto like '"+busqueda+"%'");
                 try 
                 {
                     borrarTablaEntradas();
@@ -265,7 +260,7 @@ public class Controlador implements ActionListener {
             else if(setTablaMovimiento)
             {
                 conexion.abrirConexion();
-                ResultSet rs = conexion.ejecutarQueryResult("select * from salidas where numfactura like '"+busqueda+"%'");
+                ResultSet rs = conexion.ejecutarQueryResult("select * from salidas where codigoproducto like '"+busqueda+"%'");
                 try 
                 {
                     borrarTablaSalidas();
@@ -400,10 +395,10 @@ public class Controlador implements ActionListener {
                     {
                         if(añadirEntrada(codProducto,numFactura,nombreProveedor,costoDolares,tasaDeCambio,costoTotalPesos,cantEntrante))
                         {
+                            JOptionPane.showMessageDialog(vista, "Entrada añadida exitosamente.");
                             limpiarFormularioEntrada();
                             añadirATablaEntradas(numFactura, codProducto, nombreProveedor, costoDolares, tasaDeCambio, costoTotalPesos, cantEntrante);
                             actualizarProductoPorEntrada(codProducto, Integer.parseInt(cantEntrante), Float.parseFloat(costoTotalPesos));
-                            JOptionPane.showMessageDialog(vista, "Entrada añadida exitosamente.");
                         }
                     }
                     

@@ -103,7 +103,6 @@ public class Conexion {
     
     /******************************************************************************************************/
     
-    //Método para establecer la conexión con la base de datos:--------------------------------------------
     public void abrirConexion()
     {
         try 
@@ -118,7 +117,6 @@ public class Conexion {
     
     /******************************************************************************************************/
     
-    //Método para cerrar la conexión con la base de datos:------------------------------------------------------
     public void cerrarConexion()
     {
         try
@@ -128,7 +126,7 @@ public class Conexion {
             result.close();
         }catch(SQLException | NullPointerException error)
         {
-            //JOptionPane.showMessageDialog(null, "Error al tratar de cerrar la conexión:\n"+error.getMessage());
+            JOptionPane.showMessageDialog(null, "Error al tratar de cerrar la conexión:\n"+error.getMessage());
         }
     }
     //Fin cerrarConexion()---------------------------------------------------------------------------------------
